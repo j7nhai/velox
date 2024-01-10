@@ -30,8 +30,10 @@ class DirectDecoder : public IntDecoder<isSigned> {
       std::unique_ptr<dwio::common::SeekableInputStream> input,
       bool useVInts,
       uint32_t numBytes,
-      bool bigEndian = false)
-      : IntDecoder<isSigned>{std::move(input), useVInts, numBytes, bigEndian} {}
+      bool bigEndian = false,
+      std::optional<TimestampPrecision> precision = std::nullopt)
+      : IntDecoder<isSigned>{std::move(input), useVInts, numBytes, bigEndian},
+        precision_(precision) {}
 
   void seekToRowGroup(dwio::common::PositionProvider&) override;
 
@@ -92,14 +94,21 @@ class DirectDecoder : public IntDecoder<isSigned> {
       } else if constexpr (std::is_same_v<
                                typename Visitor::DataType,
                                int128_t>) {
-        if (super::numBytes == 12 /* INT96 */) {
-          int128_t encoded = super::template readInt<int128_t>();
-          int32_t days = encoded & ((1ULL << 32) - 1);
-          uint64_t nanos = static_cast<uint64_t>(encoded >> 32);
+        if (precision_.has_value()) {
+          auto units = super::template readInt<int64_t>();
+          Timestamp timestamp;
+          if (precision_.value() == TimestampPrecision::kMilliseconds) {
+            timestamp = Timestamp::fromMillis(units);
+          } else if (precision_.value() == TimestampPrecision::kMicroseconds) {
+            timestamp = Timestamp::fromMicros(units);
+          } else {
+            VELOX_NYI(
+                "Unsupported timestamp unit. Only kMillis and kMicros supported.");
+          }
 
-          auto timestamp = Timestamp::fromDaysAndNanos(days, nanos);
-          toSkip =
-              visitor.process(*reinterpret_cast<int128_t*>(&timestamp), atEnd);
+          int128_t value;
+          memcpy(&value, &timestamp, sizeof(int128_t));
+          toSkip = visitor.process(value, atEnd);
         } else {
           toSkip = visitor.process(super::template readInt<int128_t>(), atEnd);
         }
@@ -120,6 +129,8 @@ class DirectDecoder : public IntDecoder<isSigned> {
 
  private:
   using super = IntDecoder<isSigned>;
+
+  const std::optional<TimestampPrecision> precision_;
 
   float readFloat() {
     float temp;
