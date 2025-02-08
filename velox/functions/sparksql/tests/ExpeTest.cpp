@@ -33,7 +33,13 @@ class ExpeTest : public SparkFunctionBaseTest {
 
 TEST_F(ExpeTest, trim) {
   // for int32
-  EXPECT_EQ(trim("okokok"), "");
+  EXPECT_EQ(trim("okokok"), "okokok");
+  EXPECT_EQ(trim("  okokok"), "okokok");
+  EXPECT_EQ(trim("okokok  "), "okokok");
+  EXPECT_EQ(trim("  okokok  "), "okokok");
+  EXPECT_EQ(trim("      "), "");
+  EXPECT_EQ(trim(""), "");
+  EXPECT_EQ(trim("  a    "), "a");
 }
 
 } // namespace

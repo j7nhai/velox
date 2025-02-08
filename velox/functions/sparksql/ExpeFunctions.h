@@ -1,15 +1,16 @@
 #pragma once
-#pragma once
 
 #include "folly/ssl/OpenSSLHash.h"
 
 #include <codecvt>
 #include <string>
+#include "velox/core/CoreTypeSystem.h"
 #include "velox/expression/VectorFunction.h"
 #include "velox/functions/Macros.h"
 #include "velox/functions/UDFOutputString.h"
 #include "velox/functions/lib/string/StringCore.h"
 #include "velox/functions/lib/string/StringImpl.h"
+#include "velox/type/StringView.h"
 
 namespace facebook::velox::functions::sparksql {
 
@@ -26,8 +27,20 @@ struct ExpeTrimSpaceFunctionBase {
   FOLLY_ALWAYS_INLINE void call(
       out_type<Varchar>& result,
       const arg_type<Varchar>& srcStr) {
-    result.setEmpty();
-    // result.setNoCopy(new StringView(srcStr.data(), srcStr.size()));
+    if (srcStr.empty()) {
+      result.setEmpty();
+      return;
+    }
+    auto data = srcStr.data();
+    auto begin = data;
+    auto end = begin + srcStr.size();
+    while (begin < end && *begin == ' ') {
+      begin++;
+    }
+    while (begin < end && *(end - 1) == ' ') {
+      end--;
+    }
+    result.setNoCopy(StringView(begin, end - begin));
   }
 };
 
