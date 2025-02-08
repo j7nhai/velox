@@ -20,6 +20,7 @@ velox_add_library(
   RegisterBitwise.cpp
   RegisterComparison.cpp
   RegisterDatetime.cpp
+  RegisterExpe.cpp
   RegisterJson.cpp
   RegisterMap.cpp
   RegisterMath.cpp

@@ -21,6 +21,7 @@ velox_add_library(
   ConcatWs.cpp
   DecimalArithmetic.cpp
   DecimalCompare.cpp
+  ExpeFunctions.cpp
   Hash.cpp
   In.cpp
   LeastGreatest.cpp

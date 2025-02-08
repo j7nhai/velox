@@ -14,50 +14,7 @@
 
 add_executable(
   velox_functions_spark_test
-  ArithmeticTest.cpp
-  ArrayFlattenTest.cpp
-  ArrayGetTest.cpp
-  ArrayInsertTest.cpp
-  ArrayMaxTest.cpp
-  ArrayMinTest.cpp
-  ArraySortTest.cpp
-  ArrayShuffleTest.cpp
-  ArgGeneratorTest.cpp
-  AtLeastNNonNullsTest.cpp
-  BitwiseTest.cpp
-  ComparisonsTest.cpp
-  ConcatWsTest.cpp
-  DateTimeFunctionsTest.cpp
-  DecimalArithmeticTest.cpp
-  DecimalCompareTest.cpp
-  DecimalRoundTest.cpp
-  DecimalUtilTest.cpp
-  ElementAtTest.cpp
-  GetJsonObjectTest.cpp
-  HashTest.cpp
-  InTest.cpp
-  JsonObjectKeysTest.cpp
-  LeastGreatestTest.cpp
-  MakeDecimalTest.cpp
-  MakeTimestampTest.cpp
-  MapTest.cpp
-  MaskTest.cpp
-  MightContainTest.cpp
-  MonotonicallyIncreasingIdTest.cpp
-  RaiseErrorTest.cpp
-  RandTest.cpp
-  RegexFunctionsTest.cpp
-  SliceTest.cpp
-  SizeTest.cpp
-  SortArrayTest.cpp
-  SparkCastExprTest.cpp
-  SparkPartitionIdTest.cpp
-  SplitTest.cpp
-  StringTest.cpp
-  StringToMapTest.cpp
-  UnscaledValueFunctionTest.cpp
-  UuidTest.cpp
-  XxHash64Test.cpp)
+  ExpeTest.cpp)
 
 add_test(velox_functions_spark_test velox_functions_spark_test)
 
