@@ -29,10 +29,19 @@ class ExpeTest : public SparkFunctionBaseTest {
   std::optional<std::string> trim(const std::optional<std::string>& a) {
     return evaluateOnce<std::string>("expe_trim(c0)", a);
   }
+
+  template <typename T>
+  std::optional<T> greatest(
+      std::optional<T> arg0,
+      std::optional<T> arg1,
+      std::optional<T> arg2,
+      const TypePtr& type = CppToType<T>::create()) {
+    return evaluateOnce<T>(
+        "expe_greatest(c0, c1, c2)", {type, type, type}, arg0, arg1, arg2);
+  }
 };
 
 TEST_F(ExpeTest, trim) {
-  // for int32
   EXPECT_EQ(trim("okokok"), "okokok");
   EXPECT_EQ(trim("  okokok"), "okokok");
   EXPECT_EQ(trim("okokok  "), "okokok");
@@ -40,6 +49,11 @@ TEST_F(ExpeTest, trim) {
   EXPECT_EQ(trim("      "), "");
   EXPECT_EQ(trim(""), "");
   EXPECT_EQ(trim("  a    "), "a");
+}
+
+TEST_F(ExpeTest, greatest) {
+  EXPECT_EQ(greatest<int32_t>(3, 6, -1), 6);
+  EXPECT_EQ(greatest<int32_t>(13, 6, -1), 13);
 }
 
 } // namespace

@@ -24,6 +24,12 @@ namespace facebook::velox::functions {
 namespace sparksql {
 void registerStringFunctions(const std::string& prefix) {
   registerFunction<ExpeTrimFunction, Varchar, Varchar>({prefix + "expe_trim"});
+
+  exec::registerStatefulVectorFunction(
+      prefix + "expe_greatest",
+      expeGreaterSignatures(),
+      expeMakeGreatest,
+      exec::VectorFunctionMetadataBuilder().defaultNullBehavior(false).build());
 }
 } // namespace sparksql
 } // namespace facebook::velox::functions

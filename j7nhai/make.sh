@@ -1,3 +1,5 @@
+git diff --name-only | grep '\.\(cpp\|h\)$' |  xargs -I {} clang-format -i {}
+
 EXTRA_CMAKE_FLAGS="-DVELOX_ENABLE_EXAMPLES=ON -DVELOX_ENABLE_SUBSTRAIT=ON -DVELOX_ENABLE_BENCHMARKS_BASIC=ON -DVELOX_ENABLE_PARQUET=ON -DVELOX_BUILD_TEST_UTILS=ON -DVELOX_BUILD_VECTOR_TEST_UTILS=ON"
 
 source /opt/rh/gcc-toolset-12/enable
