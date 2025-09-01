@@ -215,6 +215,18 @@ target_link_libraries(
   velox_tpch_connector
   velox_memory)
 
+add_executable(folly_executor_demo FollyExecutorDemo.cpp)
+
+target_link_libraries(
+        folly_executor_demo
+        velox_type
+        velox_vector
+        velox_vector_test_lib
+        velox_exec
+        velox_exec_test_lib
+        velox_tpch_connector
+        velox_memory)
+
 # Join Fuzzer.
 add_executable(velox_join_fuzzer_test JoinFuzzerTest.cpp)
 
