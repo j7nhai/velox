@@ -219,6 +219,19 @@ add_executable(folly_executor_demo FollyExecutorDemo.cpp)
 
 target_link_libraries(
         folly_executor_demo
+        velox_aggregates
+        velox_type
+        velox_vector
+        velox_vector_test_lib
+        velox_exec
+        velox_exec_test_lib
+        velox_tpch_connector
+        velox_memory)
+
+add_executable(velox_exec_demo VeloxExecDemo.cpp)
+
+target_link_libraries(
+        velox_exec_demo
         velox_type
         velox_vector
         velox_vector_test_lib
