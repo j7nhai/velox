@@ -36,6 +36,27 @@ class FollyExecutorDemo : public test::VectorTestBase {
     executor->join();
     return 0;
   }
+
+  void executorExceptionWillNotCrash(bool getFuture) {
+    auto executor = std::make_shared<folly::CPUThreadPoolExecutor>(2);
+    auto fut = via(executor.get(), [] {
+      std::this_thread::sleep_for(std::chrono::seconds(1));
+      throw std::runtime_error("test error");
+      return 42;
+    });
+
+    if (getFuture) {
+      try {
+        int final = std::move(fut).get();
+        std::cout << "Final value: " << final << std::endl;
+      } catch (const std::exception& e) {
+        std::cout << "Error: " << e.what() << std::endl;
+      }
+    } else {
+      fut = 0;
+    }
+    executor->join();
+  }
 };
 
 class DemoOperator {
@@ -85,9 +106,12 @@ int main(int argc, char* argv[]) {
   FollyExecutorDemo demo;
   demo.firstDemo();
 
+  demo.executorExceptionWillNotCrash(false);
+  demo.executorExceptionWillNotCrash(true);
+
   DemoOperator o;
   o.runExecutor();
-  std::this_thread::sleep_for(std::chrono::milliseconds(10000));
+  std::this_thread::sleep_for(std::chrono::seconds(10));
   o.stop();
 
   return 0;
