@@ -1,4 +1,7 @@
 #include <folly/init/Init.h>
+
+#include "folly/executors/IOThreadPoolExecutor.h"
+#include "folly/futures/SharedPromise.h"
 #include "velox/common/memory/Memory.h"
 #include "velox/vector/tests/utils/VectorTestBase.h"
 
@@ -73,7 +76,7 @@ class DemoOperator {
     auto fut = via(executor_.get(), [this]() {
       std::cout << "[executor] Task started in thread "
                 << std::this_thread::get_id() << std::endl;
-      for (int i = 0; i < 20; ++i) { // 2秒计算
+      for (int i = 0; i < 20; ++i) {
         if (canceled_.load()) {
           std::cout << "[executor] Task canceled, exiting early! thread "
                     << std::this_thread::get_id() << std::endl;
@@ -97,22 +100,149 @@ class DemoOperator {
   std::atomic<bool> canceled_;
 };
 
+class Loader {
+ public:
+  Loader() : state_(State::kPlanned) {}
+  enum class State { kPlanned, kLoading, kCancelled, kLoaded };
+
+  bool loadOrFuture(folly::SemiFuture<bool>* wait) {
+    {
+      std::lock_guard<std::mutex> l(mutex_);
+      if (state_ == State::kCancelled || state_ == State::kLoaded) {
+        return true;
+      }
+      if (state_ == State::kLoading) {
+        if (wait == nullptr) {
+          return false;
+        }
+        if (promise_ == nullptr) {
+          promise_ = std::make_unique<folly::SharedPromise<bool>>();
+        }
+        *wait = promise_->getSemiFuture();
+        return false;
+      }
+
+      state_ = State::kLoading;
+    }
+
+    uint64_t s = 0;
+    for (int i = 0; i < N; i++) {
+      for (int j = 0; j < i; j++) {
+        s += i * j;
+      }
+    }
+    sum.store(s);
+    setEndState(State::kLoaded);
+    return true;
+  }
+
+  uint64_t getSum() const {
+    return sum.load();
+  }
+
+ private:
+  void setEndState(State endState) {
+    std::unique_ptr<folly::SharedPromise<bool>> promise;
+    {
+      std::lock_guard<std::mutex> l(mutex_);
+      state_ = endState;
+      promise.swap(promise_);
+    }
+    if (promise != nullptr) {
+      promise->setValue(true);
+    }
+  }
+
+  static constexpr int N = 10000;
+  State state_;
+  std::unique_ptr<folly::SharedPromise<bool>> promise_;
+  std::mutex mutex_;
+  std::atomic<uint64_t> sum{0};
+};
+
+class ExecutorHolderDemo {
+ public:
+  ExecutorHolderDemo()
+      : executor_(std::make_shared<folly::IOThreadPoolExecutor>(6)) {
+    for (int i = 0; i < 800; i++) {
+      loaders_.push_back(std::make_shared<Loader>());
+    }
+  }
+
+  ~ExecutorHolderDemo() {
+    for (auto& l : loaders_) {
+      folly::SemiFuture<bool> waitFuture(false);
+      if (!l->loadOrFuture(&waitFuture)) {
+        waitFuture.wait();
+      }
+    }
+    for (const auto& l : loaders_) {
+      std::cout << l->getSum() << std::endl;
+    }
+  }
+
+  void run() {
+    for (auto& loader : loaders_) {
+      executor_->add([loader]() -> void { loader->loadOrFuture(nullptr); });
+    }
+  }
+
+ private:
+  std::shared_ptr<folly::Executor> executor_;
+  std::vector<std::shared_ptr<Loader>> loaders_;
+};
+
+void demo1() {
+  FollyExecutorDemo demo;
+  demo.firstDemo();
+}
+
+void demo2() {
+  FollyExecutorDemo demo;
+  demo.executorExceptionWillNotCrash(false);
+  demo.executorExceptionWillNotCrash(true);
+}
+
+void demo3() {
+  DemoOperator o;
+  o.runExecutor();
+  std::this_thread::sleep_for(std::chrono::seconds(10));
+  o.stop();
+}
+
+void demo4() {
+  ExecutorHolderDemo executor_holder_demo;
+  executor_holder_demo.run();
+}
+
 int main(int argc, char* argv[]) {
   folly::Init init{&argc, &argv, false};
 
   // Initializes the process-wide memory-manager with the default options.
   memory::initializeMemoryManager({});
 
-  FollyExecutorDemo demo;
-  demo.firstDemo();
+  if (argc != 2) {
+    std::cout << "Usgae: ./demo demoName" << std::endl;
+    return 1;
+  }
 
-  demo.executorExceptionWillNotCrash(false);
-  demo.executorExceptionWillNotCrash(true);
-
-  DemoOperator o;
-  o.runExecutor();
-  std::this_thread::sleep_for(std::chrono::seconds(10));
-  o.stop();
-
+  auto cmd = std::stoi(argv[1]);
+  switch (cmd) {
+    case 1:
+      demo1();
+      break;
+    case 2:
+      demo2();
+      break;
+    case 3:
+      demo3();
+      break;
+    case 4:
+      demo4();
+      break;
+    default:
+      demo4();
+      break;
+  }
   return 0;
 }
