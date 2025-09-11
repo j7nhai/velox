@@ -132,7 +132,8 @@ void VeloxExecDemo::run() {
   auto result = AssertQueryBuilder(plan)
                     .split(orderScanId, makeTpchSplit())
                     .copyResults(pool());
-
+  std::cout << "show stack " << std::endl
+            << process::StackTrace().toString() << std::endl;
   std::cout << plan->toString(true, true) << std::endl;
   std::cout << std::endl
             << "> number of nations per region in TPC-H: " << result->toString()
@@ -144,6 +145,20 @@ int main(int argc, char** argv) {
   FLAGS_v = 0;
   FLAGS_minloglevel = 0;
   FLAGS_logtostderr = true;
+  FLAGS_velox_exception_user_stacktrace_enabled = true;
+
+#if __linux__
+  LOG(WARNING) << "is Linux";
+#endif
+
+#if FOLLY_HAVE_ELF
+  LOG(WARNING) << "folly have elf";
+#endif
+
+#if FOLLY_HAVE_DWARF
+  LOG(WARNING) << "folly have dwarf";
+#endif
+
   folly::Init init{&argc, &argv, false};
 
   // Initializes the process-wide memory-manager with the default options.
